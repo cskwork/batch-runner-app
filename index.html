@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Batch Runner</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+        }
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #6c757d;
+            position: relative;
+        }
+        .tab.active {
+            color: #007bff;
+            font-weight: bold;
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        /* History styles */
+        .history-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .history-item:hover {
+            background: #e9ecef;
+        }
+        .history-item.success {
+            border-left: 4px solid #28a745;
+        }
+        .history-item.error {
+            border-left: 4px solid #dc3545;
+        }
+        .history-timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .history-command {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+        .history-output {
+            max-height: 100px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+            margin-top: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .batch-file {
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .batch-file-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .batch-file-path {
+            flex: 1;
+            margin-right: 10px;
+            word-break: break-all;
+            font-family: monospace;
+        }
+        .args-container {
+            margin: 10px 0;
+        }
+        .arg-group {
+            margin-bottom: 10px;
+        }
+        .arg-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #495057;
+        }
+        .args-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .command-preview {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            word-break: break-all;
+            font-size: 0.9em;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.remove {
+            background-color: #dc3545;
+            margin-left: 10px;
+        }
+        button.remove:hover {
+            background-color: #c82333;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .help-text {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Batch File Runner</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('batch-files')">Batch Files</button>
+            <button class="tab" onclick="switchTab('history')">History</button>
+        </div>
+
+        <div id="batch-files-tab" class="tab-content active">
+            <button id="addBatchFile">Add Batch File</button>
+            <div id="batchFiles"></div>
+            <div id="output">Output will appear here...</div>
+        </div>
+
+        <div id="history-tab" class="tab-content">
+            <div id="executionHistory"></div>
+        </div>
+    </div>
+
+    <script>
+        const batchFilesDiv = document.getElementById('batchFiles');
+        const addBatchFileButton = document.getElementById('addBatchFile');
+        const outputDiv = document.getElementById('output');
+        const historyDiv = document.getElementById('executionHistory');
+        let batchFiles = [];
+        let batchFileSettings = new Map(); // Store arguments for each batch file
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            if (tabName === 'history') {
+                loadExecutionHistory();
+            }
+        }
+
+        async function loadExecutionHistory() {
+            try {
+                const history = await window.electronAPI.loadExecutionHistory();
+                historyDiv.innerHTML = '';
+                
+                history.forEach(entry => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = `history-item ${entry.success ? 'success' : 'error'}`;
+                    historyItem.innerHTML = `
+                        <div class="history-timestamp">${window.electronAPI.formatDate(entry.timestamp)}</div>
+                        <div class="history-command">${entry.command}</div>
+                        ${entry.output ? `<div class="history-output">${entry.output}</div>` : ''}
+                    `;
+                    historyItem.onclick = () => restoreExecutionContext(entry);
+                    historyDiv.appendChild(historyItem);
+                });
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function restoreExecutionContext(historyEntry) {
+            // Switch to batch files tab
+            switchTab('batch-files');
+
+            // Add the batch file if it's not already in the list
+            if (!batchFiles.includes(historyEntry.batchFile)) {
+                batchFiles.push(historyEntry.batchFile);
+            }
+
+            // Update the settings
+            batchFileSettings.set(historyEntry.batchFile, {
+                sourcePath: historyEntry.sourcePath,
+                destPath: historyEntry.destPath
+            });
+
+            // Render the UI
+            renderBatchFiles();
+            saveState();
+        }
+
+        async function loadSavedState() {
+            try {
+                const savedBatchFiles = await window.electronAPI.loadBatchFiles();
+                if (Array.isArray(savedBatchFiles)) {
+                    // Extract paths from saved state
+                    batchFiles = savedBatchFiles.map(item => item.path || '');
+                    batchFiles = batchFiles.filter(path => path); // Remove empty paths
+                    
+                    // Set up settings for each file
+                    savedBatchFiles.forEach(item => {
+                        if (item.path) {
+                            batchFileSettings.set(item.path, {
+                                sourcePath: item.sourcePath || '',
+                                destPath: item.destPath || ''
+                            });
+                        }
+                    });
+                    renderBatchFiles();
+                }
+            } catch (error) {
+                console.error('Error loading saved state:', error);
+            }
+        }
+
+        async function saveState() {
+            try {
+                const state = batchFiles.map(file => ({
+                    path: file,
+                    ...batchFileSettings.get(file)
+                }));
+                await window.electronAPI.saveBatchFiles(state);
+            } catch (error) {
+                console.error('Error saving state:', error);
+            }
+        }
+
+        function renderBatchFiles() {
+            batchFilesDiv.innerHTML = '';
+            batchFiles.forEach((file, index) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'batch-file';
+                
+                const settings = batchFileSettings.get(file) || { sourcePath: '', destPath: '' };
+                const sourceId = `source-${index}`;
+                const destId = `dest-${index}`;
+                
+                fileDiv.innerHTML = `
+                    <div class="batch-file-header">
+                        <span class="batch-file-path">${file}</span>
+                        <button onclick="runBatchFile(${index})">Run</button>
+                        <button class="remove" onclick="removeBatchFile(${index})">Remove</button>
+                    </div>
+                    <div class="args-container">
+                        <div class="arg-group">
+                            <label class="arg-label" for="${sourceId}">Source File/Directory:</label>
+                            <input type="text" id="${sourceId}" class="args-input" 
+                                   value="${settings.sourcePath}"
+                                   placeholder="Enter source path"
+                                   onchange="updateSettings(${index})"
+                                   onkeyup="updateSettings(${index})">
+                            <div class="help-text">Full path to the source file or directory</div>
+                        </div>
+                        <div class="arg-group">
+                            <label class="arg-label" for="${destId}">Destination Directory:</label>
+                            <input type="text" id="${destId}" class="args-input" 
+                                   value="${settings.destPath}"
+                                   placeholder="Enter destination path"
+                                   onchange="updateSettings(${index})"
+                                   onkeyup="updateSettings(${index})">
+                            <div class="help-text">Full path to the destination directory</div>
+                        </div>
+                    </div>
+                    <div class="command-preview" id="preview-${index}">
+                        Command: "${file}"
+                    </div>
+                `;
+                batchFilesDiv.appendChild(fileDiv);
+                updateCommandPreview(index);
+            });
+        }
+
+        function updateSettings(index) {
+            const sourceInput = document.getElementById(`source-${index}`);
+            const destInput = document.getElementById(`dest-${index}`);
+            
+            batchFileSettings.set(batchFiles[index], {
+                sourcePath: sourceInput.value.trim(),
+                destPath: destInput.value.trim()
+            });
+            
+            updateCommandPreview(index);
+            saveState();
+        }
+
+        function updateCommandPreview(index) {
+            const settings = batchFileSettings.get(batchFiles[index]) || { sourcePath: '', destPath: '' };
+            const previewDiv = document.getElementById(`preview-${index}`);
+            
+            let command = `"${batchFiles[index]}"`;
+            if (settings.sourcePath) command += ` "${settings.sourcePath}"`;
+            if (settings.destPath) command += ` "${settings.destPath}"`;
+            
+            previewDiv.textContent = `Command: ${command}`;
+        }
+
+        function removeBatchFile(index) {
+            batchFileSettings.delete(batchFiles[index]);
+            batchFiles.splice(index, 1);
+            renderBatchFiles();
+            saveState();
+        }
+
+        function runBatchFile(index) {
+            const filePath = batchFiles[index];
+            const settings = batchFileSettings.get(filePath) || { sourcePath: '', destPath: '' };
+            
+            if (!settings.sourcePath || !settings.destPath) {
+                outputDiv.innerHTML = `
+                    <div class="status error">Error: Both source and destination paths are required</div>
+                `;
+                return;
+            }
+            
+            const args = `"${settings.sourcePath}" "${settings.destPath}"`;
+            outputDiv.textContent = 'Running batch file...';
+            window.electronAPI.runBatchFile(filePath, args);
+        }
+
+        addBatchFileButton.addEventListener('click', () => {
+            window.electronAPI.selectBatchFile();
+        });
+
+        window.electronAPI.onBatchFileSelected((filePath) => {
+            if (!batchFiles.includes(filePath)) {
+                batchFiles.push(filePath);
+                renderBatchFiles();
+                saveState();
+            }
+        });
+
+        window.electronAPI.onBatchFileRunResult((result) => {
+            if (result.success) {
+                outputDiv.innerHTML = `
+                    <div class="status success">Batch file executed successfully!</div>
+                    <strong>Output:</strong>\n${result.stdout}\n
+                    <strong>Errors:</strong>\n${result.stderr}
+                `;
+            } else {
+                outputDiv.innerHTML = `
+                    <div class="status error">Error executing batch file: ${result.error}</div>
+                `;
+            }
+        });
+
+        // Load saved state when the app starts
+        loadSavedState();
+    </script>
+</body>
+</html>

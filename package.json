@@ -1,0 +1,20 @@
+{
+  "name": "batch-runner-app",
+  "version": "1.0.0",
+  "description": "An Electron app to run batch files",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-packager . BatchRunner --platform=win32 --arch=x64 --out=dist --overwrite --asar"
+  },
+  "keywords": [],
+  "author": "Cline",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  }
+}
